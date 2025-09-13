@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { createPortal } from 'react-dom'
 import { Play, Download, ChevronDown } from 'lucide-react'
 
 const sampleText = `In the ancient land of Eldoria, where skies shimmered and forests, whispered secrets to the wind, lived a dragon named Zephyros. [sarcastically] Not the "burn it all down" kind... [giggles] but he was gentle, wise, with eyes like old stars. [whispers] Even the birds fell silent when he passed.`
@@ -27,33 +26,20 @@ export default function TextToSpeechPanel() {
     const [isPlaying, setIsPlaying] = useState(false)
     const [text, setText] = useState(sampleText)
     const [showDropdown, setShowDropdown] = useState(false)
-    const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 })
     const audioRef = useRef<HTMLAudioElement>(null)
-    const dropdownRef = useRef<HTMLDivElement>(null)
-    const buttonRef = useRef<HTMLButtonElement>(null)
 
     // Close dropdown when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
-                buttonRef.current && !buttonRef.current.contains(event.target as Node)) {
+            const target = event.target as HTMLElement
+            if (!target.closest('.relative')) {
                 setShowDropdown(false)
             }
         }
 
-        document.addEventListener('mousedown', handleClickOutside)
-        return () => document.removeEventListener('mousedown', handleClickOutside)
-    }, [])
-
-    // Update dropdown position when opened
-    useEffect(() => {
-        if (showDropdown && buttonRef.current) {
-            const rect = buttonRef.current.getBoundingClientRect()
-            setDropdownPosition({
-                top: rect.bottom + window.scrollY + 4,
-                left: rect.left + window.scrollX,
-                width: rect.width
-            })
+        if (showDropdown) {
+            document.addEventListener('mousedown', handleClickOutside)
+            return () => document.removeEventListener('mousedown', handleClickOutside)
         }
     }, [showDropdown])
 
@@ -208,11 +194,13 @@ export default function TextToSpeechPanel() {
                 {/* Controls */}
                 <div className="px-6 py-4 bg-gray-50 flex items-center justify-between rounded-b-xl relative">
                     <div className="flex items-center space-x-4">
-                        {/* Language Dropdown */}
-                        <div className="relative">
+                        {/* Language Dropdown - SIMPLE VERSION */}
+                        <div className="relative z-50">
                             <button
-                                ref={buttonRef}
-                                onClick={() => setShowDropdown(!showDropdown)}
+                                onClick={() => {
+                                    console.log('Dropdown clicked!')
+                                    setShowDropdown(!showDropdown)
+                                }}
                                 className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-md bg-white hover:bg-gray-50 text-sm font-medium min-w-[160px] justify-between"
                             >
                                 <span className="flex items-center space-x-2">
@@ -221,39 +209,31 @@ export default function TextToSpeechPanel() {
                                 </span>
                                 <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
                             </button>
-                        </div>
 
-                        {/* Portal Dropdown */}
-                        {showDropdown && typeof window !== 'undefined' && createPortal(
-                            <div
-                                ref={dropdownRef}
-                                className="fixed bg-white border border-gray-200 rounded-lg shadow-2xl z-[9999] max-h-72 overflow-y-auto"
-                                style={{
-                                    top: dropdownPosition.top,
-                                    left: dropdownPosition.left,
-                                    minWidth: Math.max(dropdownPosition.width, 200)
-                                }}
-                            >
-                                {languages.map((language) => (
-                                    <button
-                                        key={language.code}
-                                        onClick={() => {
-                                            setSelectedLanguage(language.code)
-                                            setShowDropdown(false)
-                                        }}
-                                        className={`w-full text-left px-4 py-3 hover:bg-blue-50 flex items-center space-x-3 text-sm transition-colors first:rounded-t-lg last:rounded-b-lg ${selectedLanguage === language.code ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700 hover:text-gray-900'
-                                            }`}
-                                    >
-                                        <span className="text-lg">{language.flag}</span>
-                                        <span>{language.name}</span>
-                                        {selectedLanguage === language.code && (
-                                            <span className="ml-auto text-blue-600">✓</span>
-                                        )}
-                                    </button>
-                                ))}
-                            </div>,
-                            document.body
-                        )}
+                            {/* Simple Dropdown - NO PORTAL */}
+                            {showDropdown && (
+                                <div className="absolute top-full left-0 mt-1 w-full min-w-[200px] bg-white border border-gray-200 rounded-lg shadow-xl z-[9999] max-h-72 overflow-y-auto">
+                                    {languages.map((language) => (
+                                        <button
+                                            key={language.code}
+                                            onClick={() => {
+                                                console.log('Language selected:', language.code)
+                                                setSelectedLanguage(language.code)
+                                                setShowDropdown(false)
+                                            }}
+                                            className={`w-full text-left px-4 py-3 hover:bg-blue-50 flex items-center space-x-3 text-sm transition-colors first:rounded-t-lg last:rounded-b-lg ${selectedLanguage === language.code ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700 hover:text-gray-900'
+                                                }`}
+                                        >
+                                            <span className="text-lg">{language.flag}</span>
+                                            <span>{language.name}</span>
+                                            {selectedLanguage === language.code && (
+                                                <span className="ml-auto text-blue-600">✓</span>
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     <div className="flex items-center space-x-3">
